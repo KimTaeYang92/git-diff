@@ -7,7 +7,7 @@ inputs:
     required: false
     default: 'auto'
   github-token:
-    description: 'GitHub token'
+    description: 'GitHub token for PR comment creation'
     required: true
   openai-api-key:
     description: 'OpenAI API key'
