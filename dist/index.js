@@ -48553,8 +48553,8 @@ async function run() {
     const geminiApiKey = getInput('gemini-api-key');
     const qaBranchPattern = getInput('qa-branch-pattern') || 'qa|test';
     const opBranchPattern = getInput('op-branch-pattern') || 'main|master|op|prod';
-    const openaiModel = getInput('openai-model') || 'gpt-4o';
-    const geminiModelName = getInput('gemini-model') || 'gemini-1.5-flash';
+    const openaiModel = getInput('openai-model') || 'gpt-5.2-mini';
+    const geminiModelName = getInput('gemini-model') || 'gemini-3-flash-preview';
     
     if (!openaiApiKey && !geminiApiKey) {
       throw new Error('Either openai-api-key or gemini-api-key must be provided.');
