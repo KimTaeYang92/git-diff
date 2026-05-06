@@ -21,6 +21,7 @@
 ### 1. GitHub Secrets 설정
 저장소의 **Settings > Secrets and variables > Actions** 메뉴에서 다음 값을 추가합니다.
 *   `OPENAI_API_KEY`: [OpenAI API Key](https://platform.openai.com/api-keys)를 입력합니다.
+*   `GEMINI_API_KEY`: [Google AI Studio](https://aistudio.google.com/app/apikey)에서 발급받은 키를 입력합니다.
 
 ### 2. 워크플로우 파일 생성
 `.github/workflows/pr-summary.yml` 파일을 생성하고 아래 내용을 복사하여 붙여넣습니다.
@@ -48,10 +49,10 @@ jobs:
         uses: KimTaeYang92/git-diff@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          # (선택 사항) 프로젝트 환경에 맞게 브랜치 패턴을 조정하세요.
-          # qa-branch-pattern: 'qa|test|staging'
-          # op-branch-pattern: 'main|master|op|prod'
+          gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
+          # (선택 사항) OpenAI를 사용하고 싶다면 아래 주석을 해제하세요.
+          # openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          # ai-provider: 'openai'
 ```
 
 ---
@@ -60,11 +61,14 @@ jobs:
 
 | 입력값 | 필수 여부 | 기본값 | 설명 |
 | :--- | :---: | :--- | :--- |
+| `ai-provider` | No | `auto` | 사용할 AI 엔진 선택 (`openai`, `gemini`, `auto`). `auto` 설정 시 Gemini가 우선 선택됩니다. |
 | `github-token` | Yes | - | `${{ secrets.GITHUB_TOKEN }}` 를 사용하세요. |
-| `openai-api-key` | Yes | - | `${{ secrets.OPENAI_API_KEY }}` 를 사용하세요. |
+| `openai-api-key` | No | - | OpenAI API 키 (선택 사항) |
+| `gemini-api-key` | No | - | Google Gemini API 키 (선택 사항) |
 | `qa-branch-pattern` | No | `qa\|test` | QA용 리포트를 생성할 대상 브랜치 정규식 패턴 |
 | `op-branch-pattern` | No | `main\|master\|op\|prod` | 운영용 리포트를 생성할 대상 브랜치 정규식 패턴 |
-| `openai-model` | No | `gpt-4o` | 사용할 OpenAI 모델명 |
+| `openai-model` | No | `gpt-5.2-mini` | 사용할 OpenAI 모델명 |
+| `gemini-model` | No | `gemini-3-flash-preview` | 사용할 Gemini 모델명 |
 
 ---
 
