@@ -48554,8 +48554,8 @@ async function run() {
     const aiProviderInput = getInput('ai-provider').toLowerCase();
     const qaBranchPattern = getInput('qa-branch-pattern') || 'qa|test';
     const opBranchPattern = getInput('op-branch-pattern') || 'main|master|op|prod';
-    const openaiModel = getInput('openai-model') || 'gpt-4o';
-    const geminiModelName = getInput('gemini-model') || 'gemini-1.5-flash';
+    const openaiModel = getInput('openai-model') || 'gpt-5.2-mini';
+    const geminiModelName = getInput('gemini-model') || 'gemini-3-flash-preview';
     
     // Provider selection logic
     let selectedProvider = '';
@@ -48566,9 +48566,9 @@ async function run() {
       if (!geminiApiKey) throw new Error('Gemini provider selected but gemini-api-key is missing.');
       selectedProvider = 'gemini';
     } else {
-      // 'auto' or other: fallback based on available keys
-      if (openaiApiKey) selectedProvider = 'openai';
-      else if (geminiApiKey) selectedProvider = 'gemini';
+      // 'auto' or other: fallback based on available keys - Gemini First
+      if (geminiApiKey) selectedProvider = 'gemini';
+      else if (openaiApiKey) selectedProvider = 'openai';
       else throw new Error('No API keys provided for either OpenAI or Gemini.');
     }
 
