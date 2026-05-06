@@ -1,0 +1,13 @@
+# action.yml
+name: 'PR Summarizer for Non-Developers'
+description: 'Summarizes PR diffs into non-developer friendly reports using OpenAI'
+inputs:
+  github-token:
+    description: 'GitHub token for PR comment creation'
+    required: true
+  openai-api-key:
+    description: 'OpenAI API key'
+    required: true
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
