@@ -46953,41 +46953,67 @@ const _deployments_endpoints = new Set([
 //# sourceMappingURL=index.mjs.map
 ;// CONCATENATED MODULE: ./src/prompt.js
 // src/prompt.js
-const systemPrompt = `
-당신은 개발자의 코드를 비개발자(운영팀, CS팀)가 이해하기 쉽게 번역해주는 '친절한 프로덕트 매니저(PM)'입니다.
-제공되는 Git Diff와 Commit Message를 분석하여 아래의 마크다운 템플릿에 맞게 리포트를 작성해주세요.
+const QA_PROMPT = `
+당신은 기술적 이해도가 높은 QA 매니저입니다.
+제공된 Git Diff와 Commit Message를 분석하여 [QA 테스트 리포트]를 작성해주세요.
 
 [규칙]
-1. 'Refactoring', '변수명 변경', '라이브러리 업데이트' 등 사용자 경험에 변화가 없는 단순 내부 작업은 '내부 시스템 안정화 작업'으로 묶어서 아주 짧게만 언급하고, UI/비즈니스 로직 변경에 집중하세요.
-2. 코드 변경 사항으로 보아 화면의 위치나 테스트 방법을 정확히 알 수 없다면, 억지로 지어내지 말고 '관련 페이지에서 확인 필요'라고 작성하세요.
-3. 기술 용어를 최대한 배제하고 일상 용어로 설명하세요.
+1. 변경된 로직으로 인해 영향을 받을 수 있는 '사이드 이펙트(Side Effects)' 예상 지점을 구체적으로 명시하세요.
+2. 테스트 시나리오를 '정상 케이스'와 '엣지 케이스(예외 상황)'로 나누어 상세히 작성하세요.
+3. 기술적인 변경 사항을 누락 없이 요약하세요.
 4. 반드시 한국어로 작성하세요.
 
 [출력 템플릿]
-# 🚀 [업데이트 내용 요약] {제목을 간결하게 작성}
+# 🧪 [QA 테스트 가이드] {제목}
 
-**👤 운영자님, 이런 부분이 변경되었습니다!**
+### 1. 🔍 주요 변경 로직
+- {변경사항 1}
+- {변경사항 2}
 
-### 1. 🎯 무엇이 바뀌었나요? (요약)
-- {핵심 변경 사항 1}
-- {핵심 변경 사항 2}
+### 2. ⚠️ 사이드 이펙트 주의사항
+- {영향을 받을 수 있는 다른 기능이나 데이터}
 
-### 2. 📍 어디서 확인할 수 있나요? (위치)
-- {화면 위치 또는 URL, 모르면 '관련 페이지에서 확인 필요'}
-
-### 3. ✅ 운영자 확인/테스트 방법
-1. {테스트 단계 1}
-2. {테스트 단계 2}
+### 3. ✅ 상세 테스트 시나리오
+- **정상 케이스:**
+  1. {단계 1}
+- **엣지 케이스:**
+  1. {단계 1}
 
 ---
 <details>
-<summary> 🛠 (참고) 개발자용 기술 변경 요약 </summary>
-- {기술적 변경 요약 1}
-- {기술적 변경 요약 2}
+<summary> 🛠 기술 요약 </summary>
+{기술적 세부 사항 요약}
 </details>
 `;
 
+const OP_PROMPT = `
+당신은 친절한 프로덕트 매니저(PM)입니다.
+비개발자(운영팀, CS팀)를 위한 [서비스 운영 리포트]를 작성해주세요.
 
+[규칙]
+1. 모든 기술 용어를 배제하고 '사용자 화면'과 '비즈니스 가치' 중심으로 설명하세요.
+2. 이 업데이트로 인해 운영 업무나 고객 응대에 어떤 변화가 생기는지 명확히 하세요.
+3. 반드시 한국어로 작성하세요.
+
+[출력 템플릿]
+# 🚀 [운영 업데이트 리포트] {제목}
+
+**👤 운영자님, 이 기능이 바뀌었어요!**
+
+### 1. 🎯 무엇이 좋아졌나요?
+- {사용자 가치 중심 요약}
+
+### 2. 📍 확인 방법 (위치)
+- {화면 위치 또는 URL}
+
+### 3. 📝 운영/CS 가이드
+- {운영 시 주의사항 또는 고객 안내 포인트}
+`;
+
+const DEFAULT_PROMPT = `
+당신은 개발 팀의 PM입니다. PR 내용을 요약하여 리포트를 작성해주세요.
+비개발자도 이해할 수 있도록 쉽게 설명하세요.
+`;
 
 ;// CONCATENATED MODULE: ./src/index.js
 // src/index.js
@@ -47000,6 +47026,9 @@ async function run() {
   try {
     const githubToken = getInput('github-token', { required: true });
     const openaiApiKey = getInput('openai-api-key', { required: true });
+    const qaBranchPattern = getInput('qa-branch-pattern') || 'qa|test';
+    const opBranchPattern = getInput('op-branch-pattern') || 'main|master|op|prod';
+    const openaiModel = getInput('openai-model') || 'gpt-4o';
     
     const context = github_context;
     
@@ -47008,9 +47037,26 @@ async function run() {
       return;
     }
     
-    const prNumber = context.payload.pull_request.number;
+    const pr = context.payload.pull_request;
+    const baseBranch = pr.base.ref;
+    const prNumber = pr.number;
     const repo = context.repo;
     
+    // Select Prompt based on branch pattern
+    let systemPrompt = DEFAULT_PROMPT;
+    const qaRegex = new RegExp(qaBranchPattern, 'i');
+    const opRegex = new RegExp(opBranchPattern, 'i');
+
+    if (qaRegex.test(baseBranch)) {
+      systemPrompt = QA_PROMPT;
+      info(`Branch [${baseBranch}] matches QA pattern. Using QA Prompt.`);
+    } else if (opRegex.test(baseBranch)) {
+      systemPrompt = OP_PROMPT;
+      info(`Branch [${baseBranch}] matches OP pattern. Using OP Prompt.`);
+    } else {
+      info(`Branch [${baseBranch}] matches no specific pattern. Using Default Prompt.`);
+    }
+
     const octokit = getOctokit(githubToken);
     
     info(`Fetching diff for PR #${prNumber}...`);
@@ -47033,8 +47079,12 @@ async function run() {
     });
     
     const commitMessages = commits.map(c => c.commit.message).join('\n');
+    const prBody = pr.body || 'No description provided.';
     
     const userPrompt = `
+PR Title: ${pr.title}
+PR Description: ${prBody}
+
 Commit Messages:
 ${commitMessages}
 
@@ -47042,7 +47092,7 @@ Git Diff:
 ${diff}
 `;
 
-    info('Sending data to OpenAI...');
+    info(`Sending data to OpenAI using model ${openaiModel}...`);
     
     const openai = new OpenAI({ apiKey: openaiApiKey });
     
@@ -47051,7 +47101,7 @@ ${diff}
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      model: 'gpt-4o',
+      model: openaiModel,
       temperature: 0.3,
     });
     

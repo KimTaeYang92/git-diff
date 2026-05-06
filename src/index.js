@@ -2,12 +2,15 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { OpenAI } from 'openai';
-import { systemPrompt } from './prompt.js';
+import { QA_PROMPT, OP_PROMPT, DEFAULT_PROMPT } from './prompt.js';
 
 async function run() {
   try {
     const githubToken = core.getInput('github-token', { required: true });
     const openaiApiKey = core.getInput('openai-api-key', { required: true });
+    const qaBranchPattern = core.getInput('qa-branch-pattern') || 'qa|test';
+    const opBranchPattern = core.getInput('op-branch-pattern') || 'main|master|op|prod';
+    const openaiModel = core.getInput('openai-model') || 'gpt-4o';
     
     const context = github.context;
     
@@ -16,9 +19,26 @@ async function run() {
       return;
     }
     
-    const prNumber = context.payload.pull_request.number;
+    const pr = context.payload.pull_request;
+    const baseBranch = pr.base.ref;
+    const prNumber = pr.number;
     const repo = context.repo;
     
+    // Select Prompt based on branch pattern
+    let systemPrompt = DEFAULT_PROMPT;
+    const qaRegex = new RegExp(qaBranchPattern, 'i');
+    const opRegex = new RegExp(opBranchPattern, 'i');
+
+    if (qaRegex.test(baseBranch)) {
+      systemPrompt = QA_PROMPT;
+      core.info(`Branch [${baseBranch}] matches QA pattern. Using QA Prompt.`);
+    } else if (opRegex.test(baseBranch)) {
+      systemPrompt = OP_PROMPT;
+      core.info(`Branch [${baseBranch}] matches OP pattern. Using OP Prompt.`);
+    } else {
+      core.info(`Branch [${baseBranch}] matches no specific pattern. Using Default Prompt.`);
+    }
+
     const octokit = github.getOctokit(githubToken);
     
     core.info(`Fetching diff for PR #${prNumber}...`);
@@ -41,8 +61,12 @@ async function run() {
     });
     
     const commitMessages = commits.map(c => c.commit.message).join('\n');
+    const prBody = pr.body || 'No description provided.';
     
     const userPrompt = `
+PR Title: ${pr.title}
+PR Description: ${prBody}
+
 Commit Messages:
 ${commitMessages}
 
@@ -50,7 +74,7 @@ Git Diff:
 ${diff}
 `;
 
-    core.info('Sending data to OpenAI...');
+    core.info(`Sending data to OpenAI using model ${openaiModel}...`);
     
     const openai = new OpenAI({ apiKey: openaiApiKey });
     
@@ -59,7 +83,7 @@ ${diff}
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      model: 'gpt-4o',
+      model: openaiModel,
       temperature: 0.3,
     });
     

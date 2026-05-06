@@ -1,6 +1,6 @@
 # action.yml
-name: 'PR Summarizer for Non-Developers'
-description: 'Summarizes PR diffs into non-developer friendly reports using OpenAI'
+name: 'Flexible Multi-Persona PR Summarizer'
+description: 'Summarizes PR diffs into branch-specific reports (QA/OP) using OpenAI'
 inputs:
   github-token:
     description: 'GitHub token for PR comment creation'
@@ -8,6 +8,18 @@ inputs:
   openai-api-key:
     description: 'OpenAI API key'
     required: true
+  qa-branch-pattern:
+    description: 'Regex pattern to match QA branches (default: qa|test)'
+    required: false
+    default: 'qa|test'
+  op-branch-pattern:
+    description: 'Regex pattern to match OP/Production branches (default: main|master|op|prod)'
+    required: false
+    default: 'main|master|op|prod'
+  openai-model:
+    description: 'OpenAI model to use (default: gpt-4o)'
+    required: false
+    default: 'gpt-4o'
 runs:
   using: 'node20'
   main: 'dist/index.js'
