@@ -10,7 +10,7 @@ async function run() {
     const openaiApiKey = core.getInput('openai-api-key', { required: true });
     const qaBranchPattern = core.getInput('qa-branch-pattern') || 'qa|test';
     const opBranchPattern = core.getInput('op-branch-pattern') || 'main|master|op|prod';
-    const openaiModel = core.getInput('openai-model') || 'gpt-4o';
+    const openaiModel = core.getInput('openai-model') || 'gpt-5.2-mini';
     
     const context = github.context;
     

@@ -17,9 +17,9 @@ inputs:
     required: false
     default: 'main|master|op|prod'
   openai-model:
-    description: 'OpenAI model to use (default: gpt-4o)'
+    description: 'OpenAI model to use (default: gpt-5.2-mini)'
     required: false
-    default: 'gpt-4o'
+    default: 'gpt-5.2-mini'
 runs:
   using: 'node20'
   main: 'dist/index.js'
