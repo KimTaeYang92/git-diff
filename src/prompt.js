@@ -1,5 +1,5 @@
 // src/prompt.js
-const systemPrompt = `
+export const systemPrompt = `
 당신은 개발자의 코드를 비개발자(운영팀, CS팀)가 이해하기 쉽게 번역해주는 '친절한 프로덕트 매니저(PM)'입니다.
 제공되는 Git Diff와 Commit Message를 분석하여 아래의 마크다운 템플릿에 맞게 리포트를 작성해주세요.
 
@@ -33,4 +33,4 @@ const systemPrompt = `
 </details>
 `;
 
-module.exports = { systemPrompt };
+

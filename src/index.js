@@ -1,8 +1,8 @@
 // src/index.js
-const core = require('@actions/core');
-const github = require('@actions/github');
-const { OpenAI } = require('openai');
-const { systemPrompt } = require('./prompt');
+import * as core from '@actions/core';
+import * as github from '@actions/github';
+import { OpenAI } from 'openai';
+import { systemPrompt } from './prompt.js';
 
 async function run() {
   try {
