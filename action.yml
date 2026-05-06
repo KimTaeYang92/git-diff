@@ -2,6 +2,10 @@
 name: 'Flexible Multi-Persona PR Summarizer'
 description: 'Summarizes PR diffs into branch-specific reports (QA/OP) using OpenAI or Google Gemini'
 inputs:
+  ai-provider:
+    description: 'Choice of AI provider: openai, gemini, or auto (default: auto)'
+    required: false
+    default: 'auto'
   github-token:
     description: 'GitHub token'
     required: true
