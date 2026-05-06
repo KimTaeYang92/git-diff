@@ -1,13 +1,20 @@
 # action.yml
 name: 'Flexible Multi-Persona PR Summarizer'
-description: 'Summarizes PR diffs into branch-specific reports (QA/OP) using OpenAI'
+description: 'Summarizes PR diffs into branch-specific reports (QA/OP) using OpenAI or Google Gemini'
 inputs:
+  ai-provider:
+    description: 'Choice of AI provider: openai, gemini, or auto (default: auto)'
+    required: false
+    default: 'auto'
   github-token:
     description: 'GitHub token for PR comment creation'
     required: true
   openai-api-key:
     description: 'OpenAI API key'
-    required: true
+    required: false
+  gemini-api-key:
+    description: 'Google Gemini API key'
+    required: false
   qa-branch-pattern:
     description: 'Regex pattern to match QA branches (default: qa|test)'
     required: false
@@ -17,9 +24,13 @@ inputs:
     required: false
     default: 'main|master|op|prod'
   openai-model:
-    description: 'OpenAI model to use (default: gpt-4o)'
+    description: 'OpenAI model to use (default: gpt-5.2-mini)'
     required: false
-    default: 'gpt-4o'
+    default: 'gpt-5.2-mini'
+  gemini-model:
+    description: 'Gemini model to use (default: gemini-3-flash-preview)'
+    required: false
+    default: 'gemini-3-flash-preview'
 runs:
   using: 'node20'
   main: 'dist/index.js'
